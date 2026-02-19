@@ -7,7 +7,7 @@ from kafka.errors import KafkaError
 # Configurações
 KAFKA_BOOTSTRAP_SERVERS = ['localhost:9092']
 KAFKA_TOPIC = 'humidity-sensors'  # Tópico específico para umidade
-MESSAGES_PER_SECOND = 0.2         # Um pouco mais rápido: 1 msg a cada 5s
+MESSAGES_PER_SECOND = 5         # Um pouco mais rápido: 1 msg a cada 5s
 
 producer = KafkaProducer(
     bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,

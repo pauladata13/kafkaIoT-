@@ -9,7 +9,7 @@ from kafka.errors import KafkaError
 
 KAFKA_BOOTSTRAP_SERVERS = ['localhost:9092']
 KAFKA_TOPIC = 'temperature-sensors'
-MESSAGES_PER_SECOND = 0.125 
+MESSAGES_PER_SECOND = 5
 
 producer = KafkaProducer(
     bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
