@@ -22,7 +22,7 @@ connector_config = {
         "s3.bucket.name": "temperature-data",
         "s3.region": "us-west-2",
         "s3.endpoint": "http://minio:9000",
-        
+        "store.url": "http://minio:9000",
         "format.class": "io.confluent.connect.s3.format.json.JsonFormat",
         "partitioner.class": "io.confluent.connect.storage.partitioner.TimeBasedPartitioner",
         "path.format": "'year'=YYYY/'month'=MM/'day'=dd/'hour'=HH/",
