@@ -13,7 +13,7 @@ producer = KafkaProducer(
     value_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
 
-base_temp = 20.0
+base_temp = 25 
 sensor_id = "sensor_temp_2"
 location = "A Coruña-Riazor"
 

@@ -14,7 +14,7 @@ producer = KafkaProducer(
     acks='all'
 )
 
-base_temp = 18.0
+base_temp = 25.0  # Temperatura base para el ciclo (puede ser ajustada)
 start_time = datetime.now()  # Referencia para el incremento lineal
 sensor_id = "sensor_temp_1"
 locations = ['A Coruña-Cuatro Caminos', 'A Coruña-Monelos']
