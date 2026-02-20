@@ -1,7 +1,4 @@
-"""
-IoT HUMEDAD Kafka → MinIO Connector (JSON sin partición)
-ENUNCIADO: No partitioning - all data in single location
-"""
+
 import requests
 import json
 import time
@@ -20,26 +17,36 @@ connector_config = {
         "s3.region": "us-west-2",
         
         "s3.endpoint": "http://minio:9000",
+        "store.url": "http://minio:9000",
+        
+       
+        "s3.path.style.access": "true", 
+        
         "format.class": "io.confluent.connect.s3.format.json.JsonFormat",
         "partitioner.class": "io.confluent.connect.storage.partitioner.DefaultPartitioner",
-        "flush.size": "1",
-        "rotate.interval.ms": "5000",
+        
+ 
+        "flush.size": "1",        
+        "rotate.interval.ms": "1000",
+        
         "aws.access.key.id": "minioadmin",
         "aws.secret.access.key": "minioadmin",
         "schema.compatibility": "NONE"
     }
 }
 
-
 def wait_for_connect(): 
-    print("Waiting for Kafka Connect...")
+    print("=" * 60)
+    print("Esperando a que Kafka Connect esté disponible...")
     for i in range(30):
         try:
-            if requests.get(f"{CONNECT_URL}/connectors").status_code == 200:
-                print("Kafka Connect ready!")
+            response = requests.get(f"{CONNECT_URL}/connectors")
+            if response.status_code == 200:
+                print("Kafka Connect detectado!")
                 return True
-        except: pass
-        print(f"Wait {i+1}/30...")
+        except:
+            pass
+        print(f"Intento {i+1}/30 - Reintentando en 5s...")
         time.sleep(5)
     return False
 
@@ -48,29 +55,39 @@ def delete_connector_if_exists():
         r = requests.get(f"{CONNECT_URL}/connectors/{CONNECTOR_NAME}")
         if r.status_code == 200:
             requests.delete(f"{CONNECT_URL}/connectors/{CONNECTOR_NAME}")
-            print("Old connector deleted")
-            time.sleep(5)
-    except: pass
+            print("Conector antiguo eliminado")
+            time.sleep(2)
+    except Exception as e:
+        print(f"Error al intentar borrar: {e}")
 
 def create_connector():
     headers = {"Content-Type": "application/json"}
-    r = requests.post(f"{CONNECT_URL}/connectors", headers=headers, data=json.dumps(connector_config))
+    print(f"Creando conector: {CONNECTOR_NAME}...")
+    r = requests.post(
+        f"{CONNECT_URL}/connectors", 
+        headers=headers, 
+        data=json.dumps(connector_config)
+    )
+    
     if r.status_code == 201:
-        print("✓ Humidity connector OK!")
+        print("CONECTOR DE HUMEDAD CREADO CON ÉXITO")
         return True
-    print(f"✗ Error {r.status_code}: {r.text}")
-    return False
+    else:
+        print(f" ERROR AL CREAR CONECTOR: {r.status_code}")
+        print(f"Detalle: {r.text}")
+        return False
 
 def main():
     print("=" * 60)
-    print("IoT HUMIDITY → MinIO (JSON no partition)")
+    print("IoT DATA PIPELINE: HUMIDITY SINK SETUP")
     print("=" * 60)
     
     if wait_for_connect():
         delete_connector_if_exists()
-        create_connector()
-        print("\n✅ humidity-data/topics/humidity-sensors/partition=0/")
-        print("MinIO: http://localhost:9001")
+        if create_connector():
+            print("\nDestino: bucket 'humidity-data'")
+            print("Estructura: topics/humidity-sensors/partition=0/...")
+            print("\nComprueba MinIO en: http://localhost:9001")
 
 if __name__ == "__main__":
     main()

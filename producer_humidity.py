@@ -1,61 +1,48 @@
-
-import json, time, random, math
+import json
+import time
+import random
+import math
 from datetime import datetime
 from kafka import KafkaProducer
-from kafka.errors import KafkaError
 
-# Configurações
 KAFKA_BOOTSTRAP_SERVERS = ['localhost:9092']
-KAFKA_TOPIC = 'humidity-sensors'  # Tópico específico para umidade
-MESSAGES_PER_SECOND = 5         # Um pouco mais rápido: 1 msg a cada 5s
+KAFKA_TOPIC = 'humidity-sensors'
 
 producer = KafkaProducer(
     bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-    value_serializer=lambda v: json.dumps(v).encode('utf-8'),
-    acks='all', retries=3
+    value_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
 
-base_humidity = 60.0  # Umidade base (60%)
+base_hum = 65.0
 sensor_id = "sensor_hum_1"
-locations = ['A Coruña-Monte Alto', 'A Coruña-Riazor']
+location = "A Coruña-Monte Alto"
 
-print("📡 Producer Humedad:python3 producer_temp1.py Ciclo 24h estable → humidity-sensors")
-print(f"📍 Locations: {locations}")
-print("⚡ ~5s/msg | Ctrl+C para parar\n")
-
-mensaje_count = 0
+print(f"📡 Producer 3: {sensor_id} activo. Tendencia: Alta de noche (18h-06h)")
 
 try:
     while True:
         now = datetime.now()
-        hour = now.hour
+        hour = now.hour + (now.minute / 60)
         
-        # Ciclo de umidade (geralmente inverso à temperatura: mais alta à noite/madrugada)
-        # Usamos -math.sin para que o pico seja oposto ao da temperatura
-        cycle_hum = base_humidity - 15 * math.sin(2 * math.pi * hour / 24) + random.uniform(-2.0, 2.0)
+        # Ajuste de fase (hour + 3) para que el pico de humedad sea a las 03:00 AM
+        cycle = 20 * math.sin(2 * math.pi * (hour + 3) / 24)
+        hum = base_hum + cycle + random.uniform(-1.5, 1.5)
         
-        # Garantir que não ultrapasse 0-100%
-        cycle_hum = max(0, min(100, cycle_hum))
+        # Asegurar límites de 0-100%
+        hum = max(0, min(100, hum))
         
         data = {
             "sensor_id": sensor_id,
-            "humidity": round(cycle_hum, 2),
+            "humidity": round(hum, 2),
             "timestamp": now.isoformat(),
-            "location": random.choice(locations)
+            "location": location
         }
         
-        future = producer.send(KAFKA_TOPIC, value=data)
-        future.get(timeout=10)
-        mensaje_count += 1
-        
-        if mensaje_count % 10 == 0:
-            print(f"✅ {mensaje_count} msgs | {data['humidity']}% HR | "
-                  f"{data['timestamp'][:16]} | {data['location']}")
-        
-        time.sleep(1.0 / MESSAGES_PER_SECOND)
-        
+        producer.send(KAFKA_TOPIC, value=data)
+        print(f"✅ {sensor_id} | {data['humidity']}% HR | Hora: {now.strftime('%H:%M')}")
+        time.sleep(5)
+
 except KeyboardInterrupt:
-    print(f"\n Detenido | {mensaje_count} mensagens enviadas")
+    print("\nDeteniendo Producer 3...")
 finally:
-    producer.flush()
     producer.close()

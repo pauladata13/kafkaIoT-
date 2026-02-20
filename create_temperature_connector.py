@@ -1,9 +1,3 @@
-"""
-Configure Kafka Connect S3 Sink Connector - TEMPERATURA IoT
-temperature-sensors → temperature-data/ (JSON + particionado hora)
-ENUNCIADO: temperature-data/year=2025/month=02/day=13/hour=14/
-"""
-
 import requests
 import json
 import time
@@ -82,11 +76,11 @@ def create_connector():
     )
     
     if response.status_code == 201:
-        print("✓ Temperature connector created successfully!")
+        print("Temperature connector created successfully!")
         print(json.dumps(response.json(), indent=2))
         return True
     else:
-        print(f"✗ Failed to create connector. Status: {response.status_code}")
+        print(f" Failed to create connector. Status: {response.status_code}")
         print(response.text)
         return False
 

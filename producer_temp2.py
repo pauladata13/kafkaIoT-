@@ -1,55 +1,45 @@
-
-import json, time, random, math
+import json
+import time
+import random
+import math
 from datetime import datetime
 from kafka import KafkaProducer
-from kafka.errors import KafkaError
 
 KAFKA_BOOTSTRAP_SERVERS = ['localhost:9092']
-KAFKA_TOPIC = 'temperature-sensors'  
-MESSAGES_PER_SECOND =  5 
+KAFKA_TOPIC = 'temperature-sensors'
 
 producer = KafkaProducer(
     bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-    value_serializer=lambda v: json.dumps(v).encode('utf-8'),
-    acks='all', retries=3
+    value_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
 
-base_temp = 21.0  
+base_temp = 20.0
 sensor_id = "sensor_temp_2"
-locations = ['A Coruña-Monte Alto', 'A Coruña-Riazor']
+location = "A Coruña-Riazor"
 
-print("📡 Producer 2: Ciclo 24h estable → temperature-sensors")
-print(f"📍 Locations: {locations}")
-print("⚡ ~8s/msg | Ctrl+C para parar\n")
-
-mensaje_count = 0
+print(f"📡 Producer 2: {sensor_id} activo. Tendencia: Ciclo 24h")
 
 try:
     while True:
         now = datetime.now()
-        hour = now.hour
+        hour = now.hour + (now.minute / 60)
         
-        cycle_temp = base_temp + 4 * math.sin(2 * math.pi * hour / 24) + random.uniform(-0.5, 0.5)
+        # Ajuste de fase (hour - 9) para que el pico (sin=1) sea a las 15:00
+        cycle = 5 * math.sin(2 * math.pi * (hour - 9) / 24)
+        temp = base_temp + cycle + random.uniform(-0.3, 0.3)
         
         data = {
             "sensor_id": sensor_id,
-            "temperature": round(cycle_temp, 2),
+            "temperature": round(temp, 2),
             "timestamp": now.isoformat(),
-            "location": random.choice(locations)
+            "location": location
         }
         
-        future = producer.send(KAFKA_TOPIC, value=data)
-        future.get(timeout=10)
-        mensaje_count += 1
-        
-        if mensaje_count % 10 == 0:
-            print(f"✅ {mensaje_count} msgs | {data['temperature']}°C | "
-                  f"{data['timestamp'][:16]} | {data['location']}")
-        
-        time.sleep(1.0 / MESSAGES_PER_SECOND)
-        
+        producer.send(KAFKA_TOPIC, value=data)
+        print(f"✅ {sensor_id} | {data['temperature']}°C | Hora: {now.strftime('%H:%M')}")
+        time.sleep(5)
+
 except KeyboardInterrupt:
-    print(f"\n Detenido | {mensaje_count} mensajes enviados")
+    print("\nDeteniendo Producer 2...")
 finally:
-    producer.flush()
     producer.close()
